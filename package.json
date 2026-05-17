@@ -1,0 +1,23 @@
+{
+  "name": "volkswagen-playwright-suite",
+  "version": "1.0.0",
+  "description": "Automated Playwright test suite for Volkswagen web scenarios",
+  "author": "Mukul Narayana <mukul.narayana@ascendion.com>",
+  "license": "MIT",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:report": "playwright show-report",
+    "test:debug": "playwright test --debug",
+    "test:ci": "playwright test --reporter=github"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
