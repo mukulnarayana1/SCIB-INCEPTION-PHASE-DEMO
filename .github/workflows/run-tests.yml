@@ -1,0 +1,67 @@
+name: Volkswagen Playwright CI
+
+on:
+  push:
+    branches:
+      - main
+      - feat/volkswagen-automation-suite
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run Playwright Tests (${{ matrix.project }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - chromium
+          - firefox
+          - webkit
+
+    steps:
+      # ── 1. Checkout Source Code ─────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Set up Node.js ───────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── 3. Install Node Dependencies ────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. Install Playwright Browsers ──────────────────────────
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.project }}
+
+      # ── 5. Run Playwright Tests ──────────────────────────────────
+      - name: Run Playwright tests
+        run: npx playwright test --project=${{ matrix.project }}
+        env:
+          CI: true
+
+      # ── 6. Upload Test Report ────────────────────────────────────
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: playwright-report/
+          retention-days: 14
+
+      # ── 7. Upload Test Results (JSON) ────────────────────────────
+      - name: Upload test results JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.project }}
+          path: test-results/
+          retention-days: 14
