@@ -13,6 +13,7 @@ jobs:
   test:
     name: Run Playwright Tests (${{ matrix.project }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     strategy:
       fail-fast: false
@@ -34,7 +35,6 @@ jobs:
           node-version: '20'
 
       # ── 3. Install Node Dependencies ────────────────────────────
-      #       npm install is used (no package-lock.json in repo)
       - name: Install dependencies
         run: npm install
 
@@ -44,9 +44,10 @@ jobs:
 
       # ── 5. Run Playwright Tests ──────────────────────────────────
       - name: Run Playwright tests
-        run: npx playwright test --project=${{ matrix.project }}
+        run: npx playwright test --project=${{ matrix.project }} --retries=2
         env:
           CI: true
+          BASE_URL: https://www.volkswagen.co.uk
 
       # ── 6. Upload Test Report ────────────────────────────────────
       - name: Upload Playwright HTML report
