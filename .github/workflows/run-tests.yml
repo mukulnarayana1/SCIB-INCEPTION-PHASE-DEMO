@@ -1,0 +1,65 @@
+name: VW Models - Automated UI Tests (PyTest + Playwright)
+
+on:
+  push:
+    branches:
+      - main
+      - feat/automated-tests-with-ci
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run PyTest + Playwright UI Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout repository ───────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── 2. Set up Python ─────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # ── 3. Cache pip dependencies ─────────────────────────────────────────────
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # ── 4. Install Python dependencies ───────────────────────────────────────
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest playwright pytest-playwright pytest-html
+
+      # ── 5. Install Playwright browsers ───────────────────────────────────────
+      - name: Install Playwright Chromium browser
+        run: playwright install chromium --with-deps
+
+      # ── 6. Run test suite ────────────────────────────────────────────────────
+      - name: Run automated tests
+        run: |
+          pytest tests/ \
+            --tb=short \
+            --html=reports/test-report.html \
+            --self-contained-html \
+            -v
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      # ── 7. Upload test report as artifact ─────────────────────────────────────
+      - name: Upload HTML test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-report
+          path: reports/test-report.html
+          retention-days: 14
