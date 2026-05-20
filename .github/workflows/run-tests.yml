@@ -1,0 +1,81 @@
+name: Volkswagen Playwright CI
+
+on:
+  push:
+    branches:
+      - main
+      - feat/volkswagen-automation-suite
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run Playwright Tests (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - chromium
+          - firefox
+          - webkit
+
+    steps:
+      # ── 1. Checkout Source Code ───────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Set up Node.js ─────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── 3. Cache npm dependencies ─────────────────────────────────────────
+      # [FIX] Added dependency caching to speed up runs and improve stability
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      # ── 4. Install Node Dependencies ──────────────────────────────────────
+      # [FIX] Using 'npm install' (no lockfile present in repo).
+      #       @playwright/test is pinned to exact version 1.44.1 in package.json
+      #       for reproducible installs without requiring a lockfile.
+      - name: Install dependencies
+        run: npm install
+
+      # ── 5. Install Playwright Browsers ────────────────────────────────────
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.project }}
+
+      # ── 6. Run Playwright Tests ───────────────────────────────────────────
+      - name: Run Playwright tests
+        run: npx playwright test --project=${{ matrix.project }} --retries=2
+        env:
+          CI: true
+          BASE_URL: https://www.volkswagen.co.uk
+
+      # ── 7. Upload Test Report ─────────────────────────────────────────────
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: playwright-report/
+          retention-days: 14
+
+      # ── 8. Upload Test Results (JSON) ─────────────────────────────────────
+      - name: Upload test results JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.project }}
+          path: test-results/
+          retention-days: 14
